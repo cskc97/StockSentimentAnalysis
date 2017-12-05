@@ -17,7 +17,7 @@ class Spider:
     def __get_sentiment(self, story):
         payload = {'documents':[{'id':1, 'language':'en', 'text':story}]}
         print(json.dumps(payload))
-        headers = headers = {'Ocp-Apim-Subscription-Key': self._key2}
+        headers = {'Ocp-Apim-Subscription-Key': self._key1, "Content-Type":"application/json", "Accept":"application/json"}
         url = self._sentiment_analysis_endpoint
         request = requests.post(url, data=json.dumps(payload), headers=headers)
         print(request.text)
