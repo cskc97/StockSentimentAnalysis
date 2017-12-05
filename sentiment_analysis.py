@@ -11,8 +11,8 @@ class Spider:
 
     def __init__(self):
         self._sentiment_analysis_endpoint = "https://westus.api.cognitive.microsoft.com/text/analytics/v2.0/sentiment"
-        self._key1 = "de688d4aa6bc4afca6ce72db1481e513"
-        self._key2 = "76cf52e6128d4545994ca753bd47e6f5"
+        self._key1 = "bb27d2f5fb3b4b889bce822d726b09ac"
+        self._key2 = "01572def178342179993aa4eef97d341"
 
     def __get_sentiment(self, story):
         payload = {'documents':[{'id':1, 'language':'en', 'text':story}]}
