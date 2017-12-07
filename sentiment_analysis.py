@@ -2,6 +2,8 @@ from pprint import pprint
 import json
 import requests
 from bs4 import BeautifulSoup
+import pymysql
+
 
 BLOOMBERG_URL = "https://www.bloomberg.com/search?query="
 companies = ["Google", "Apple"]
@@ -10,16 +12,34 @@ companies = ["Google", "Apple"]
 class Spider:
 
     def __init__(self):
-        self._sentiment_analysis_endpoint = "https://westus.api.cognitive.microsoft.com/text/analytics/v2.0/sentiment"
-        self._key1 = "bb27d2f5fb3b4b889bce822d726b09ac"
+        self._key1 = "c31155fb4ef44e598697433926e764ae"
         self._key2 = "01572def178342179993aa4eef97d341"
+        self._sentiment_analysis_endpoint = "https://eastus.api.cognitive.microsoft.com/text/analytics/v2.0/sentiment?Subscription-Key={key}"\
+            .format(key=self._key2)
+
+    def _create_database(self):
+
+        connection = pymysql.connect(host='34.235.205.203',
+                                     user='root',
+                                     password='dwdstudent2015',
+                                     db='ODIMAtches',
+                                     charset='utf8',
+                                     cursorclass=pymysql.cursors.DictCursor)
+
+        create_db_query = "CREATE DATABASE IF NOT EXISTS ODIMatches DEFAULT CHARACTER SET 'utf8'"
+        cursor = connection.cursor()
+        cursor.execute(create_db_query)
+        cursor.close()
+
+        connection.close()
+
 
     def __get_sentiment(self, story):
         payload = {'documents':[{'id':1, 'language':'en', 'text':story}]}
         print(json.dumps(payload))
-        headers = {'Ocp-Apim-Subscription-Key': self._key1, "Content-Type":"application/json", "Accept":"application/json"}
+        #headers = {'Ocp-Apim-Subscription-Key': self._key1}
         url = self._sentiment_analysis_endpoint
-        request = requests.post(url, data=json.dumps(payload), headers=headers)
+        request = requests.post(url, data=json.dumps(payload))
         print(request.text)
 
     def get_links(self, company):
@@ -47,12 +67,15 @@ class Spider:
             soup = BeautifulSoup(content,"html.parser")
             story = ""
             paragraphs = soup.find_all("p")
-            for paragraph in paragraphs:
-                try:
-                    story += paragraph.contents[0]
-                    story += "\n"
-                except:
-                    continue
+            paragraphs = paragraphs[2:]
+            for index, paragraph in enumerate(paragraphs):
+                if index>2:
+                    try:
+                        story += paragraph.contents[0]
+                        story += "\n"
+                    except:
+                        continue
+
             return_content[link] = story
         return return_content
 
@@ -78,5 +101,5 @@ class Spider:
 
 
 spider = Spider()
-pprint(spider.get_sentiments(company="Google"))
+pprint(spider.get_sentiments(company="Snapchat"))
 
