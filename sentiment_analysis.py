@@ -6,7 +6,7 @@ import pymysql
 
 
 BLOOMBERG_URL = "https://www.bloomberg.com/search?query="
-companies = ["Google", "Apple"]
+companies = ["Google", "Apple", "Snapchat", "Bloomberg"]
 
 
 class Spider:
@@ -22,13 +22,28 @@ class Spider:
         connection = pymysql.connect(host='34.235.205.203',
                                      user='root',
                                      password='dwdstudent2015',
-                                     db='ODIMAtches',
+                                     db='ArticlesSentiment',
                                      charset='utf8',
                                      cursorclass=pymysql.cursors.DictCursor)
 
-        create_db_query = "CREATE DATABASE IF NOT EXISTS ODIMatches DEFAULT CHARACTER SET 'utf8'"
+        create_db_query = "CREATE DATABASE IF NOT EXISTS ArticlesSentiment DEFAULT CHARACTER SET 'utf8'"
         cursor = connection.cursor()
         cursor.execute(create_db_query)
+        cursor.close()
+
+        connection.close()
+
+    def _create_table(self):
+        connection = pymysql.connect(host='34.235.205.203',
+                                     user='root',
+                                     password='dwdstudent2015',
+                                     db='ArticlesSentiment',
+                                     charset='utf8',
+                                     cursorclass=pymysql.cursors.DictCursor)
+
+        query = "CREATE TABLE IF NOT EXISTS ArticlesSentiment.Articles(company VARCHAR(255), article_url VARCHAR(400), score DOUBLE, PRIMARY KEY (company, article_url)); "
+        cursor = connection.cursor()
+        cursor.execute(query)
         cursor.close()
 
         connection.close()
@@ -40,7 +55,9 @@ class Spider:
         #headers = {'Ocp-Apim-Subscription-Key': self._key1}
         url = self._sentiment_analysis_endpoint
         request = requests.post(url, data=json.dumps(payload))
-        print(request.text)
+
+        json_result = json.loads(request.text)
+        return json_result.get("documents")[0].get("score")
 
     def get_links(self, company):
         return_array = []
@@ -82,15 +99,34 @@ class Spider:
 
 
 
-    def get_sentiments(self, company):
-        return_sentiments = dict()
-        stories = self.get_content(company=company)
-        stories = dict(stories)
+    def get_sentiments(self):
 
-        for key in stories.keys():
-            if key is not None:
-                story = stories.get(key)
-                self.__get_sentiment(story)
+        self._create_database()
+        self._create_table()
+
+        connection = pymysql.connect(host='34.235.205.203',
+                                     user='root',
+                                     password='dwdstudent2015',
+                                     db='ArticlesSentiment',
+                                     charset='utf8',
+                                     cursorclass=pymysql.cursors.DictCursor)
+        cursor = connection.cursor()
+
+        for company in companies:
+
+            stories = self.get_content(company=company)
+            stories = dict(stories)
+
+            for key in stories.keys():
+                if key is not None:
+                    story = stories.get(key)
+                    score = self.__get_sentiment(story)
+                    query = "INSERT IGNORE INTO ArticlesSentiment.Articles VALUES('{}','{}',{})".format(company,key, float(score))
+                    cursor.execute(query)
+
+        connection.commit()
+        cursor.close()
+        connection.close()
 
 
 
@@ -101,5 +137,5 @@ class Spider:
 
 
 spider = Spider()
-pprint(spider.get_sentiments(company="Snapchat"))
+pprint(spider.get_sentiments())
 
